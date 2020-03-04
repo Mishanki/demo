@@ -1,0 +1,249 @@
+{% extends "synergy_user.html" %}
+
+{% block main_body_block %}
+    
+    <table>
+        <tr>
+            <td><h1>Карта баллов</h1></td>
+            <td style="text-align:right;"><a href="/documents/markmap.pdf" target="_blank">Инструкция&nbsp;<i class="icon icon-info" style="margin-bottom:4px;"><i></i></i></a></td>
+        </tr>
+    </table>
+    
+
+    {% include 'discipline/nav.html' %}
+
+    <div class="filter form">
+        <h3>{{lng('common.search')}}</h3>
+        <form action="{{ site_url('markmap/listing') }}" id="markMapSearch" method="post">
+
+            <div class='row'>
+                <div class='label'>Наличие версии:</div>
+                <div class='field'>
+                    {{ controlselect({
+                        containerId: 'disciplineVersionContainer',
+                        name:       'selDisciplineVersion',
+                        values:     selDisciplineVersion,
+                        required:   false,
+                        hint :      'Выберите',
+                        clearTemplate: true
+                    })|raw }}
+                </div>
+            </div>
+
+            <div class='row'>
+                <div class='label'>Год:</div>
+                <div class='field'>
+                    {{ controlselect({
+                        containerId: 'eduYearContainer',
+                        name:       'eduYear',
+                        values:     selYear,
+                        required:   false,
+                        hint :      'Выберите',
+                        clearTemplate: true
+                    })|raw }}
+                </div>
+            </div>
+
+            <div class='row'>
+                <div class='label'>Семестр:</div>
+                <div class='field'>
+                    {{ controlselect({
+                        containerId: 'sersemesterContainer',
+                        name:       'sersemester',
+                        values:     selSerSemester,
+                        required:   false,
+                        hint :      'Выберите',
+                        clearTemplate: true
+                    })|raw }}
+                </div>
+            </div>
+
+            <div class='row'>
+                <div class='label'>Полугодие:</div>
+                <div class='field'>
+                    {{ controlselect({
+                        containerId: 'edusemesterContainer',
+                        name:       'edusemester',
+                        values:     selEdusemester,
+                        required:   false,
+                        hint :      'Выберите',
+                        clearTemplate: true
+                    })|raw }}
+                </div>
+            </div>
+
+                <div class="row">
+                    <div class="label">{{ lng('common.group') }}:</div>
+                    <div class="field">
+                        {{ CI.load.view('layout/controls/multiselectAc',{url:site_url('autocomplete/akada/group/0/1'),name:'group',textValue:nav.srch['groupText'],values:groups}, 1)|raw }}
+                    </div>
+                </div>
+
+
+
+            <br/>
+            <input type="hidden" name="doSrch" value="1"/>
+            {{ btn('bt2','Применить','srchBtn', {return: true})|raw }}
+            {{ btn('','Сброс','doResetBtn',{link: current_url()~'/?doReset=1',return: true})|raw }}
+
+        </form>
+    </div>
+
+    <div class="clear"><br/></div>
+
+    <table class="table-list ">
+        <thead>
+        <tr>
+            <th>Версия</th>
+            <th>Дисциплина</th>
+            <th>Название версии</th>
+            <th>Сем-р/Полугодие</th>
+            <th>Год</th>
+            <th>Группа</th>
+            <th>Кол-во мер-й</th>
+            <th>Действия</th>
+            <th>Балл</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ass in assign %}
+            {% set sumWeight_1 = 0 %}
+
+            {% for ev in ass.events %}
+                {% if ev.subMode == 1 %}
+                    {% set sumWeight_1 = sumWeight_1 + ev.weight %}
+                {% endif %}
+            {% endfor %}
+            <tr id="row_dvId{{ ass.disciplineVersionId }}_{{ ass.groupPeriodId }}">
+                <td>{% if ass.disciplineVersionId %}{{ ass.disciplineVersionId }}{% else %} - {% endif %}</td>
+                <td><a href="{{ site_url('teacher/updiscipline') }}/{{ ass.upDisciplineId }}/{{ ass.groupPeriodId }}/1/1">{{ ass.disciplineName }}</a></td>
+                <td>{% if ass.dvName %}
+                        {{ ass.dvName }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ ass.sersemester }}/{{ ass.edusemester }}</td>
+                <td>{{ ass.yearName }}</td>
+                <td>{{ ass.groupName }}</td>
+                <td class="eventCount">{{ ass.events|length }}</td>
+                <td>
+                    {% if ass['isAssessmentStarted'] > 0 and ass.events[0]['source']  == 2 %}
+                        <span style="color: green">В работе</span>
+                    {% elseif  sumWeight_1 > 0 and ass.events[0]['source']  != 2 %}
+                        <span class="red">Нет доступа</span>
+                    {% else %}
+                        {% if  ass.disciplineVersionId  %}
+                            <a href="#" onclick="return expandversion({{ ass.disciplineVersionId }}, this, {{ ass.groupPeriodId }})">Привязать</a>
+                        {% else %}
+                            Нет версии
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td class="sumWeight">{{ sumWeight_1 }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <script type="application/javascript">
+
+        function expandversion(disciplineVersionId, obj, groupPeriodId) {
+            if ($('.rows' + disciplineVersionId + '_' + groupPeriodId).length > 0) {
+                $('.rows' + disciplineVersionId + '_' + groupPeriodId).remove();
+            } else {
+                refreshRows(disciplineVersionId, groupPeriodId);
+            }
+            return false;
+        }
+
+        function refreshRows (disciplineVersionId, groupPeriodId) {
+            $.ajax({
+                url: "{{ site_url('markmap/versionsrow') }}",
+                type: 'post',
+                data: {'dvId': disciplineVersionId, 'groupPeriodId': groupPeriodId},
+                success: function (data) {
+                    if (data) {
+                        if (!$('.rows' + disciplineVersionId + '_' + groupPeriodId).length) {
+                            $('#row_dvId' + disciplineVersionId + '_' + groupPeriodId).after(data);
+                            var closestDiv = $('.rows' + disciplineVersionId + '_' + groupPeriodId);
+                            $('#createBtn').html('Сохранить ' + eventSumWeight(closestDiv));
+                        }
+                    }
+                }
+            });
+        }
+
+        function eventSumWeight (closestDiv) {
+            var sumWeight = 0;
+            $(closestDiv).find('input[name="eventId"]').each(function () {
+                var field = $(this).closest('.field');
+                var weight = $(field).find('input#weight').val();
+
+                var checked = $(this).is(':checked');
+                if (checked) {
+                    sumWeight = sumWeight * 1 + weight * 1;
+                }
+            });
+            return sumWeight;
+        }
+
+        $('body').on('click', '.eventsList input', function () {
+            var closestDiv = $(this).closest('div.versions-row');
+            $('#createBtn').html('Сохранить ' + eventSumWeight(closestDiv));
+        });
+
+        $('body').on('click', '#createBtn', function () {
+
+            var me = this;
+            var closestDiv = $(me).closest('div.versions-row');
+            var groupPeriodId = $(closestDiv).find('input#groupPeriodId').val();
+            var disciplineVersionId = $(closestDiv).find('input#disciplineVersionId').val();
+
+            var data = [];
+            var sumWeight = eventSumWeight(closestDiv);
+            $(closestDiv).find('input[name="eventId"]').each(function () {
+                var eventId = $(this).val();
+                var checked = $(this).is(':checked');
+                if (checked) {
+                    checked = 1;
+                } else {
+                    checked = 0;
+                }
+                data.push({'eventId': eventId, 'status': checked});
+            });
+
+            if (sumWeight == 100 || sumWeight == 0) {
+                $.post('markmap/cloneEvents', {
+                    disciplineVersionId: disciplineVersionId,
+                    groupPeriodId: groupPeriodId,
+                    data: data
+                }, function (d) {
+                    $(me).closest('tr').prev().find('.sumWeight').html(d.weight);
+                    $(me).closest('tr').prev().find('.eventCount').html(d.eventCount);
+                    $('.rows' + disciplineVersionId + '_' + groupPeriodId).remove();
+                    refreshRows(disciplineVersionId, groupPeriodId);
+                });
+
+            } else {
+                pwh.fullScreenLoaderHide();
+                pwh.alert({message: 'Можно сохранить только сумму мероприятий на 100 или 0 баллов!'});
+            }
+        });
+
+    </script>
+
+    <style type="text/css">
+
+        .versions-row {
+            max-height: 150px;
+            overflow-y: scroll;
+        }
+
+        .sumWeight {
+            width: 50px;
+        }
+
+    </style>
+
+{% endblock %}

@@ -1,0 +1,63 @@
+<h2>ПЕРЕОПРЕДЕЛЕНИЕ МЕРОПРИЯТИЯ ГРУППЫ</h2>
+
+<form id="eventOverridePopupForm" action="{{ current_url() }}" method="post">
+
+    <div class="form">
+
+        <div class="row">
+            <div class="label"><label class="formFieldLabel" for="">Мероприятие:</label></div>
+            <div class="field formFieldArea plainText   ">
+                <div class="formFieldBox afterResize">
+                    <div class="formField">{{ name }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label"><label class="formFieldLabel" for="">Группа:</label></div>
+            <div class="field formFieldArea plainText   ">
+                <div class="formFieldBox afterResize">
+                    <div class="formField">{{ groupName }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">
+                <label class="" for="">Доступно:</label>
+            </div>
+            {{ controlintervaldatetime({
+                intervalStartName : 'startTime',
+                intervalEndName	: 'finishTime',
+                activeStart		: val(event, 'startTime'),
+                activeEnd		: val(event, 'finishTime'),
+                intervalStart	: val(event, 'startTime'),
+                intervalEnd 	: val(event, 'finishTime')
+            })|raw}}
+        </div>
+
+        <div class="row">
+            {{btn('bt2','Сохранить','buttonSubmit',{return: true})|raw}}
+            {{btn('popupCancelBtn','Отмена','popupCancelBtn')|raw}}
+        </div>
+
+    </div>
+
+</form>
+
+<style type="text/css">
+
+    .row+.row {
+        margin: 20px 0 0 0;
+    }
+
+    .form .row {
+        clear: both;
+    }
+
+    .form .label {
+        width: 170px;
+        margin: 4px 10px 0 0;
+    }
+
+</style>
